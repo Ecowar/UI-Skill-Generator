@@ -7,7 +7,7 @@
   
   通过拖拽式可视化编辑，快速设计界面并生成AI提示词，助力AI辅助开发
   
-  [在线演示](#) | [功能特性](#功能特性) | [快速开始](#快速开始)
+
 </div>
 
 ---
@@ -277,5 +277,5 @@ npx tsc --noEmit
   
   **[⬆ 返回顶部](#ui-skill-generator)**
   
-  Made with ❤️ by UI Skill Generator Team
+  Made with ❤️ by Ecowar
 </div>
