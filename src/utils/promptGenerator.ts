@@ -1,4 +1,4 @@
-import type { CanvasComponent, StyleProps, ShadowPreset, ResponsiveSettings, AnimationSettings } from '../store/canvasStore'
+import type { CanvasComponent, StyleProps, ResponsiveSettings, AnimationSettings } from '../store/canvasStore'
 
 interface CanvasSettings {
   width: number
@@ -29,49 +29,165 @@ const getComponentTypeName = (type: string, lang: 'zh' | 'en'): string => {
     switch: { zh: '开关', en: 'Switch' },
     textarea: { zh: '文本域', en: 'Textarea' },
     select: { zh: '下拉框', en: 'Select' },
+    progressbar: { zh: '进度条', en: 'Progress Bar' },
+    divider: { zh: '分割线', en: 'Divider' },
+    badge: { zh: '标签', en: 'Badge' },
+    checkbox: { zh: '复选框', en: 'Checkbox' },
+    radiogroup: { zh: '单选框组', en: 'Radio Group' },
   }
   return names[type]?.[lang] || type
 }
 
-const formatColor = (color: string): string => color
+const describeSize = (width: number, _height: number, lang: 'zh' | 'en'): string => {
+  if (lang === 'zh') {
+    if (width > 400) return '宽幅'
+    if (width > 200) return '中等宽度'
+    if (width < 60) return '窄小'
+    return '标准宽度'
+  }
+  if (width > 400) return 'wide'
+  if (width > 200) return 'medium width'
+  if (width < 60) return 'narrow'
+  return 'standard width'
+}
 
-const describeShadow = (shadow: ShadowPreset | null, lang: 'zh' | 'en'): string => {
-  if (!shadow) return ''
-  return lang === 'zh'
-    ? `阴影: ${shadow.offsetX}px ${shadow.offsetY}px ${shadow.blur}px ${shadow.spread}px ${shadow.color}`
-    : `shadow: ${shadow.offsetX}px ${shadow.offsetY}px ${shadow.blur}px ${shadow.spread}px ${shadow.color}`
+const describeFontSize = (fontSize: number, lang: 'zh' | 'en'): string => {
+  if (lang === 'zh') {
+    if (fontSize >= 24) return '大号文字'
+    if (fontSize >= 18) return '中号文字'
+    if (fontSize >= 14) return '常规文字'
+    return '小号文字'
+  }
+  if (fontSize >= 24) return 'large text'
+  if (fontSize >= 18) return 'medium text'
+  if (fontSize >= 14) return 'regular text'
+  return 'small text'
+}
+
+const describeFontWeight = (fontWeight: number, lang: 'zh' | 'en'): string => {
+  if (lang === 'zh') {
+    if (fontWeight >= 700) return '粗体'
+    if (fontWeight >= 500) return '半粗'
+    return '常规'
+  }
+  if (fontWeight >= 700) return 'bold'
+  if (fontWeight >= 500) return 'semibold'
+  return 'regular'
+}
+
+const describeColor = (color: string, lang: 'zh' | 'en'): string => {
+  const colorMap: Record<string, { zh: string; en: string }> = {
+    '#1f2937': { zh: '深灰', en: 'dark gray' },
+    '#374151': { zh: '深灰', en: 'dark gray' },
+    '#6b7280': { zh: '中灰', en: 'medium gray' },
+    '#9ca3af': { zh: '浅灰', en: 'light gray' },
+    '#d1d5db': { zh: '淡灰', en: 'pale gray' },
+    '#e5e7eb': { zh: '极浅灰', en: 'very light gray' },
+    '#f3f4f6': { zh: '近白灰', en: 'near-white gray' },
+    '#ffffff': { zh: '白色', en: 'white' },
+    '#000000': { zh: '黑色', en: 'black' },
+    '#3b82f6': { zh: '蓝色', en: 'blue' },
+    '#2563eb': { zh: '深蓝', en: 'dark blue' },
+    '#60a5fa': { zh: '浅蓝', en: 'light blue' },
+    '#ef4444': { zh: '红色', en: 'red' },
+    '#f97316': { zh: '橙色', en: 'orange' },
+    '#eab308': { zh: '黄色', en: 'yellow' },
+    '#22c55e': { zh: '绿色', en: 'green' },
+    '#8b5cf6': { zh: '紫色', en: 'purple' },
+    '#ec4899': { zh: '粉色', en: 'pink' },
+  }
+  const lower = color.toLowerCase()
+  return colorMap[lower]?.[lang] || color
+}
+
+const describeBorderRadius = (radius: number, lang: 'zh' | 'en'): string => {
+  if (lang === 'zh') {
+    if (radius === 0) return '直角'
+    if (radius <= 4) return '微圆角'
+    if (radius <= 12) return '圆角'
+    if (radius <= 20) return '大圆角'
+    return '圆形/胶囊形'
+  }
+  if (radius === 0) return 'sharp corners'
+  if (radius <= 4) return 'slightly rounded'
+  if (radius <= 12) return 'rounded'
+  if (radius <= 20) return 'heavily rounded'
+  return 'pill/circular'
+}
+
+const describeOpacity = (opacity: number, lang: 'zh' | 'en'): string => {
+  if (opacity >= 1) return ''
+  if (lang === 'zh') {
+    if (opacity <= 0.3) return '几乎透明'
+    if (opacity <= 0.6) return '半透明'
+    return '微透明'
+  }
+  if (opacity <= 0.3) return 'nearly transparent'
+  if (opacity <= 0.6) return 'semi-transparent'
+  return 'slightly transparent'
 }
 
 const describeStyle = (style: StyleProps, lang: 'zh' | 'en', detailed: boolean): string[] => {
-  const lines: string[] = []
-  
-  if (lang === 'zh') {
-    if (detailed) lines.push(`尺寸: ${style.width}px × ${style.height}px`)
-    lines.push(`字体: ${style.fontSize}px, 字重: ${style.fontWeight}`)
-    lines.push(`文字颜色: ${formatColor(style.color)}`)
-    lines.push(`背景色: ${formatColor(style.backgroundColor)}`)
-    lines.push(`圆角: ${style.borderRadius}px`)
-    lines.push(`内边距: ${style.padding}px`)
-    if (style.borderStyle !== 'none') {
-      lines.push(`边框: ${style.borderWidth}px ${style.borderStyle} ${formatColor(style.borderColor)}`)
-    }
-    if (style.shadow) lines.push(describeShadow(style.shadow, lang))
-    if (style.opacity !== 1) lines.push(`透明度: ${style.opacity}`)
+  const parts: string[] = []
+
+  if (detailed) {
+    parts.push(lang === 'zh' ? `尺寸: 宽${style.width} × 高${style.height}` : `size: ${style.width} × ${style.height}`)
   } else {
-    if (detailed) lines.push(`Size: ${style.width}px × ${style.height}px`)
-    lines.push(`Font: ${style.fontSize}px, Weight: ${style.fontWeight}`)
-    lines.push(`Color: ${formatColor(style.color)}`)
-    lines.push(`Background: ${formatColor(style.backgroundColor)}`)
-    lines.push(`Border Radius: ${style.borderRadius}px`)
-    lines.push(`Padding: ${style.padding}px`)
-    if (style.borderStyle !== 'none') {
-      lines.push(`Border: ${style.borderWidth}px ${style.borderStyle} ${formatColor(style.borderColor)}`)
-    }
-    if (style.shadow) lines.push(describeShadow(style.shadow, lang))
-    if (style.opacity !== 1) lines.push(`Opacity: ${style.opacity}`)
+    parts.push(describeSize(style.width, style.height, lang))
   }
-  
-  return lines
+
+  parts.push(describeFontSize(style.fontSize, lang))
+  const weight = describeFontWeight(style.fontWeight, lang)
+  if (style.fontWeight >= 500) parts.push(weight)
+
+  const textColor = describeColor(style.color, lang)
+  const bgColor = describeColor(style.backgroundColor, lang)
+  if (lang === 'zh') {
+    if (style.backgroundColor !== '#ffffff' && style.backgroundColor !== 'transparent') {
+      parts.push(`${bgColor}背景`)
+    }
+    parts.push(`${textColor}文字`)
+  } else {
+    if (style.backgroundColor !== '#ffffff' && style.backgroundColor !== 'transparent') {
+      parts.push(`${bgColor} background`)
+    }
+    parts.push(`${textColor} text`)
+  }
+
+  parts.push(describeBorderRadius(style.borderRadius, lang))
+
+  if (style.borderStyle !== 'none') {
+    const borderColor = describeColor(style.borderColor, lang)
+    if (lang === 'zh') {
+      parts.push(`${borderColor}边框`)
+    } else {
+      parts.push(`${borderColor} border`)
+    }
+  }
+
+  if (style.shadow) {
+    parts.push(lang === 'zh' ? '带阴影' : 'with shadow')
+  }
+
+  const opacityDesc = describeOpacity(style.opacity, lang)
+  if (opacityDesc) parts.push(opacityDesc)
+
+  if (style.progress !== undefined) {
+    parts.push(lang === 'zh' ? `进度 ${style.progress}%` : `progress ${style.progress}%`)
+  }
+
+  if (style.checked !== undefined) {
+    parts.push(style.checked
+      ? (lang === 'zh' ? '已选中' : 'checked')
+      : (lang === 'zh' ? '未选中' : 'unchecked')
+    )
+  }
+
+  if (style.circular) {
+    parts.push(lang === 'zh' ? '圆形裁剪' : 'circular crop')
+  }
+
+  return parts
 }
 
 const describeResponsive = (responsive: ResponsiveSettings, lang: 'zh' | 'en'): string[] => {
@@ -114,106 +230,110 @@ const describeAnimation = (animation: AnimationSettings, lang: 'zh' | 'en'): str
 
 export function generateNaturalLanguage(
   components: CanvasComponent[],
-  settings: CanvasSettings,
+  _settings: CanvasSettings,
   options: GenerateOptions
 ): string {
   const { language, detailed } = options
   const sorted = [...components].sort((a, b) => a.zIndex - b.zIndex)
   
   if (language === 'zh') {
-    let text = `设计一个用户界面，画布尺寸为 ${settings.width}px × ${settings.height}px，背景色为 ${settings.backgroundColor}。\n\n`
-    text += `该界面包含 ${components.length} 个组件：\n\n`
+    let text = `设计一个用户界面。\n\n该界面包含 ${components.length} 个组件：\n\n`
     
     sorted.forEach((comp, index) => {
       const typeName = getComponentTypeName(comp.type, 'zh')
+      const styleParts = describeStyle(comp.style, 'zh', detailed)
       text += `${index + 1}. ${typeName}组件`
       
       if (detailed) {
-        text += `，位置在 (${Math.round(comp.x)}, ${Math.round(comp.y)})`
+        text += `，位于 (${Math.round(comp.x)}, ${Math.round(comp.y)})`
       }
       
-      if (comp.content && comp.type !== 'switch' && comp.type !== 'image') {
-        text += `，内容为"${comp.content}"`
+      if (comp.content && comp.type !== 'switch' && comp.type !== 'image' && comp.type !== 'progressbar' && comp.type !== 'divider' && comp.type !== 'radiogroup') {
+        text += `，内容"${comp.content}"`
+      }
+      
+      if (styleParts.length > 0) {
+        text += `，${styleParts.join('、')}`
       }
       
       text += '\n'
       
-      describeStyle(comp.style, 'zh', detailed).forEach(line => {
-        text += `   - ${line}\n`
-      })
-      
       if (comp.type === 'image' && comp.imageUrl) {
-        text += `   - 图片URL: ${comp.imageUrl}\n`
+        text += `   图片来源: ${comp.imageUrl}\n`
       }
-      
+
+      if (comp.type === 'radiogroup' && comp.style.options) {
+        text += `   选项: ${(comp.style.options ?? []).join('、')}\n`
+      }
+
       const responsiveLines = describeResponsive(comp.responsive, 'zh')
       if (responsiveLines.length > 0) {
-        text += '   - 响应式行为:\n'
-        responsiveLines.forEach(line => {
-          text += `     * ${line}\n`
-        })
+        text += '   响应式: '
+        text += responsiveLines.join('；')
+        text += '\n'
       }
       
       const animationLines = describeAnimation(comp.animation, 'zh')
       if (animationLines.length > 0) {
-        text += '   - 动效描述:\n'
-        animationLines.forEach(line => {
-          text += `     * ${line}\n`
-        })
+        text += '   动效: '
+        text += animationLines.join('；')
+        text += '\n'
       }
       
       text += '\n'
     })
     
-    text += `\n请严格按照以上描述实现该界面，确保布局、样式、交互效果与描述一致。`
+    text += `请根据以上描述实现该界面，确保布局、样式与交互效果与描述一致，可使用任意前端技术栈。`
     
     return text
   } else {
-    let text = `Design a user interface with a canvas size of ${settings.width}px × ${settings.height}px and background color ${settings.backgroundColor}.\n\n`
-    text += `The interface contains ${components.length} components:\n\n`
+    let text = `Design a user interface.\n\nThe interface contains ${components.length} components:\n\n`
     
     sorted.forEach((comp, index) => {
       const typeName = getComponentTypeName(comp.type, 'en')
+      const styleParts = describeStyle(comp.style, 'en', detailed)
       text += `${index + 1}. ${typeName} component`
       
       if (detailed) {
         text += ` at position (${Math.round(comp.x)}, ${Math.round(comp.y)})`
       }
       
-      if (comp.content && comp.type !== 'switch' && comp.type !== 'image') {
+      if (comp.content && comp.type !== 'switch' && comp.type !== 'image' && comp.type !== 'progressbar' && comp.type !== 'divider' && comp.type !== 'radiogroup') {
         text += ` with content "${comp.content}"`
+      }
+      
+      if (styleParts.length > 0) {
+        text += `, ${styleParts.join(', ')}`
       }
       
       text += '\n'
       
-      describeStyle(comp.style, 'en', detailed).forEach(line => {
-        text += `   - ${line}\n`
-      })
-      
       if (comp.type === 'image' && comp.imageUrl) {
-        text += `   - Image URL: ${comp.imageUrl}\n`
+        text += `   Image source: ${comp.imageUrl}\n`
       }
-      
+
+      if (comp.type === 'radiogroup' && comp.style.options) {
+        text += `   Options: ${(comp.style.options ?? []).join(', ')}\n`
+      }
+
       const responsiveLines = describeResponsive(comp.responsive, 'en')
       if (responsiveLines.length > 0) {
-        text += '   - Responsive behavior:\n'
-        responsiveLines.forEach(line => {
-          text += `     * ${line}\n`
-        })
+        text += '   Responsive: '
+        text += responsiveLines.join('; ')
+        text += '\n'
       }
       
       const animationLines = describeAnimation(comp.animation, 'en')
       if (animationLines.length > 0) {
-        text += '   - Animation:\n'
-        animationLines.forEach(line => {
-          text += `     * ${line}\n`
-        })
+        text += '   Animation: '
+        text += animationLines.join('; ')
+        text += '\n'
       }
       
       text += '\n'
     })
     
-    text += `\nPlease implement this interface exactly as described, ensuring the layout, styles, and interactions match the description.`
+    text += `Please implement this interface based on the description above, ensuring the layout, styles, and interactions match. Any frontend technology stack may be used.`
     
     return text
   }
@@ -221,7 +341,7 @@ export function generateNaturalLanguage(
 
 export function generateMarkdownSkill(
   components: CanvasComponent[],
-  settings: CanvasSettings,
+  _settings: CanvasSettings,
   options: GenerateOptions
 ): string {
   const { language, detailed } = options
@@ -230,38 +350,36 @@ export function generateMarkdownSkill(
   if (language === 'zh') {
     let md = `# UI Skill: 自定义界面\n\n`
     md += `## 角色设定\n`
-    md += `你是一名专业的前端开发工程师。请根据以下描述精确重建这个用户界面。\n\n`
+    md += `你是一名专业的UI开发者。请根据以下描述重建这个用户界面，可使用任意技术栈。\n\n`
     
-    md += `## 画布信息\n`
-    md += `- **尺寸**: ${settings.width}px × ${settings.height}px\n`
-    md += `- **背景色**: ${settings.backgroundColor}\n`
-    md += `- **组件总数**: ${components.length}\n\n`
+    md += `## 组件总数\n`
+    md += `${components.length} 个组件\n\n`
     
     md += `## 组件列表\n\n`
     
     sorted.forEach((comp, index) => {
       const typeName = getComponentTypeName(comp.type, 'zh')
+      const styleParts = describeStyle(comp.style, 'zh', detailed)
       md += `### ${index + 1}. ${typeName}\n\n`
       
       if (detailed) {
         md += `**位置**: (${Math.round(comp.x)}, ${Math.round(comp.y)})\n\n`
       }
       
-      if (comp.content && comp.type !== 'switch' && comp.type !== 'image') {
+      if (comp.content && comp.type !== 'switch' && comp.type !== 'image' && comp.type !== 'progressbar' && comp.type !== 'divider' && comp.type !== 'radiogroup') {
         md += `**内容**: "${comp.content}"\n\n`
       }
       
-      md += `**样式属性**:\n`
-      md += '```\n'
-      describeStyle(comp.style, 'zh', detailed).forEach(line => {
-        md += `${line}\n`
-      })
-      md += '```\n\n'
+      md += `**视觉描述**: ${styleParts.join('、')}\n\n`
       
       if (comp.type === 'image' && comp.imageUrl) {
-        md += `**图片URL**: \`${comp.imageUrl}\`\n\n`
+        md += `**图片来源**: ${comp.imageUrl}\n\n`
       }
-      
+
+      if (comp.type === 'radiogroup' && comp.style.options) {
+        md += `**选项**: ${(comp.style.options ?? []).join('、')}\n\n`
+      }
+
       const responsiveLines = describeResponsive(comp.responsive, 'zh')
       if (responsiveLines.length > 0) {
         md += `**响应式设置**:\n`
@@ -282,10 +400,10 @@ export function generateMarkdownSkill(
     })
     
     md += `## 实现要求\n\n`
-    md += `1. 严格按照上述描述实现每个组件的位置、尺寸和样式\n`
+    md += `1. 按照上述描述实现每个组件的位置和视觉样式\n`
     md += `2. 确保组件间的层级关系正确\n`
-    md += `3. 保持视觉风格一致，细节精确还原\n`
-    md += `4. 使用现代前端技术栈（React/Vue等）实现\n`
+    md += `3. 保持视觉风格一致\n`
+    md += `4. 可使用任意技术栈（React、Vue、Flutter、SwiftUI等）实现\n`
     md += `5. 实现响应式布局，支持移动端适配\n`
     md += `6. 添加必要的交互动效\n`
     
@@ -293,38 +411,36 @@ export function generateMarkdownSkill(
   } else {
     let md = `# UI Skill: Custom Interface\n\n`
     md += `## Role\n`
-    md += `You are a professional frontend developer. Please recreate this user interface exactly as described below.\n\n`
+    md += `You are a professional UI developer. Please recreate this user interface based on the description below, using any technology stack.\n\n`
     
-    md += `## Canvas Information\n`
-    md += `- **Size**: ${settings.width}px × ${settings.height}px\n`
-    md += `- **Background**: ${settings.backgroundColor}\n`
-    md += `- **Total Components**: ${components.length}\n\n`
+    md += `## Component Count\n`
+    md += `${components.length} components\n\n`
     
     md += `## Component List\n\n`
     
     sorted.forEach((comp, index) => {
       const typeName = getComponentTypeName(comp.type, 'en')
+      const styleParts = describeStyle(comp.style, 'en', detailed)
       md += `### ${index + 1}. ${typeName}\n\n`
       
       if (detailed) {
         md += `**Position**: (${Math.round(comp.x)}, ${Math.round(comp.y)})\n\n`
       }
       
-      if (comp.content && comp.type !== 'switch' && comp.type !== 'image') {
+      if (comp.content && comp.type !== 'switch' && comp.type !== 'image' && comp.type !== 'progressbar' && comp.type !== 'divider' && comp.type !== 'radiogroup') {
         md += `**Content**: "${comp.content}"\n\n`
       }
       
-      md += `**Styles**:\n`
-      md += '```\n'
-      describeStyle(comp.style, 'en', detailed).forEach(line => {
-        md += `${line}\n`
-      })
-      md += '```\n\n'
+      md += `**Visual Description**: ${styleParts.join(', ')}\n\n`
       
       if (comp.type === 'image' && comp.imageUrl) {
-        md += `**Image URL**: \`${comp.imageUrl}\`\n\n`
+        md += `**Image Source**: ${comp.imageUrl}\n\n`
       }
-      
+
+      if (comp.type === 'radiogroup' && comp.style.options) {
+        md += `**Options**: ${(comp.style.options ?? []).join(', ')}\n\n`
+      }
+
       const responsiveLines = describeResponsive(comp.responsive, 'en')
       if (responsiveLines.length > 0) {
         md += `**Responsive Settings**:\n`
@@ -345,10 +461,10 @@ export function generateMarkdownSkill(
     })
     
     md += `## Implementation Requirements\n\n`
-    md += `1. Implement each component with exact position, size, and style as described\n`
+    md += `1. Implement each component with the position and visual style described\n`
     md += `2. Ensure correct layer ordering between components\n`
-    md += `3. Maintain consistent visual style and precise details\n`
-    md += `4. Use modern frontend stack (React/Vue, etc.)\n`
+    md += `3. Maintain consistent visual style\n`
+    md += `4. Use any technology stack (React, Vue, Flutter, SwiftUI, etc.)\n`
     md += `5. Implement responsive layout for mobile adaptation\n`
     md += `6. Add necessary interaction animations\n`
     
@@ -358,16 +474,12 @@ export function generateMarkdownSkill(
 
 export function generateStructuredJSON(
   components: CanvasComponent[],
-  settings: CanvasSettings
+  _settings: CanvasSettings,
+  _options?: GenerateOptions
 ): string {
   const sorted = [...components].sort((a, b) => a.zIndex - b.zIndex)
   
   const data = {
-    canvas: {
-      width: settings.width,
-      height: settings.height,
-      backgroundColor: settings.backgroundColor,
-    },
     components: sorted.map((comp) => ({
       id: comp.id,
       type: comp.type,
@@ -398,6 +510,10 @@ export function generateStructuredJSON(
         shadow: comp.style.shadow,
         objectFit: comp.style.objectFit,
         opacity: comp.style.opacity,
+        progress: comp.style.progress,
+        checked: comp.style.checked,
+        options: comp.style.options,
+        circular: comp.style.circular,
       },
       responsive: comp.responsive,
       animation: comp.animation,
@@ -421,6 +537,6 @@ export function generatePrompt(
   return {
     natural: generateNaturalLanguage(components, settings, options),
     markdown: generateMarkdownSkill(components, settings, options),
-    json: generateStructuredJSON(components, settings),
+    json: generateStructuredJSON(components, settings, options),
   }
 }

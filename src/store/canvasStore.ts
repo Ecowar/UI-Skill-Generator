@@ -11,6 +11,11 @@ export type ComponentType =
   | 'switch'
   | 'textarea'
   | 'select'
+  | 'progressbar'
+  | 'divider'
+  | 'badge'
+  | 'checkbox'
+  | 'radiogroup'
 
 export type TextAlign = 'left' | 'center' | 'right'
 export type ObjectFit = 'fill' | 'contain' | 'cover' | 'none'
@@ -54,6 +59,10 @@ export interface StyleProps {
   shadow: ShadowPreset | null
   objectFit: ObjectFit
   opacity: number
+  progress?: number
+  checked?: boolean
+  options?: string[]
+  circular?: boolean
 }
 
 export interface CanvasComponent {
@@ -76,6 +85,8 @@ export interface CanvasSettings {
   viewportMode: ViewportMode
   snapToGrid: boolean
   showGridLines: boolean
+  canvasWidth: number
+  canvasHeight: number
 }
 
 interface HistoryState {
@@ -98,6 +109,7 @@ interface CanvasState {
   bringToFront: (id: string) => void
   sendToBack: (id: string) => void
   updateSettings: (updates: Partial<CanvasSettings>) => void
+  setCanvasSize: (width: number, height: number) => void
   loadProject: (data: CanvasComponent[]) => void
   resetCanvas: () => void
   undo: () => void
@@ -143,6 +155,7 @@ const getDefaultStyle = (type: ComponentType): StyleProps => {
     shadow: null,
     objectFit: 'cover',
     opacity: 1,
+    progress: 60,
   }
 
   switch (type) {
@@ -153,7 +166,7 @@ const getDefaultStyle = (type: ComponentType): StyleProps => {
     case 'input':
       return { ...base, backgroundColor: '#ffffff', borderRadius: 6, textAlign: 'left' }
     case 'image':
-      return { ...base, width: 150, height: 150, backgroundColor: '#f3f4f6', borderRadius: 8, borderStyle: 'dashed', objectFit: 'cover' }
+      return { ...base, width: 150, height: 150, backgroundColor: '#f3f4f6', borderRadius: 8, borderStyle: 'dashed', objectFit: 'cover', circular: false }
     case 'card':
       return { ...base, width: 280, height: 180, backgroundColor: '#ffffff', borderRadius: 12, padding: 16, shadow: defaultShadow }
     case 'navbar':
@@ -166,6 +179,16 @@ const getDefaultStyle = (type: ComponentType): StyleProps => {
       return { ...base, width: 240, height: 100, backgroundColor: '#ffffff', borderRadius: 6 }
     case 'select':
       return { ...base, width: 180, backgroundColor: '#ffffff', borderRadius: 6 }
+    case 'progressbar':
+      return { ...base, width: 240, height: 20, backgroundColor: '#e5e7eb', borderRadius: 10, borderStyle: 'none', color: '#3b82f6', progress: 60 }
+    case 'divider':
+      return { ...base, width: 300, height: 2, backgroundColor: '#d1d5db', borderRadius: 0, borderStyle: 'none', padding: 0 }
+    case 'badge':
+      return { ...base, width: 80, height: 28, backgroundColor: '#3b82f6', color: '#ffffff', borderRadius: 14, borderStyle: 'none', fontSize: 12, fontWeight: 500, padding: 4 }
+    case 'checkbox':
+      return { ...base, width: 160, height: 32, backgroundColor: 'transparent', borderStyle: 'none', checked: false }
+    case 'radiogroup':
+      return { ...base, width: 200, height: 100, backgroundColor: 'transparent', borderStyle: 'none', options: ['选项1', '选项2', '选项3'] }
     default:
       return base
   }
@@ -183,6 +206,11 @@ const getDefaultContent = (type: ComponentType): string => {
     switch: '',
     textarea: '多行文本...',
     select: '下拉选项',
+    progressbar: '',
+    divider: '',
+    badge: '标签',
+    checkbox: '复选框',
+    radiogroup: '',
   }
   return contents[type] || ''
 }
@@ -197,6 +225,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     viewportMode: 'desktop',
     snapToGrid: false,
     showGridLines: false,
+    canvasWidth: 800,
+    canvasHeight: 600,
   },
   history: [],
   historyIndex: -1,
@@ -342,6 +372,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   updateSettings: (updates) => {
     set((state) => ({
       settings: { ...state.settings, ...updates },
+    }))
+  },
+
+  setCanvasSize: (width, height) => {
+    set((state) => ({
+      settings: { ...state.settings, canvasWidth: width, canvasHeight: height },
     }))
   },
 

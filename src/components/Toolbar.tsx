@@ -461,7 +461,7 @@ const TEMPLATES: { name: string; icon: string; data: CanvasComponent[] }[] = [
 ]
 
 export function Toolbar() {
-  const { components, settings, updateSettings, loadProject, resetCanvas } = useCanvasStore()
+  const { components, settings, updateSettings, loadProject, resetCanvas, setCanvasSize } = useCanvasStore()
   const [showModal, setShowModal] = useState(false)
   const [prompts, setPrompts] = useState<ReturnType<typeof generatePrompt> | null>(null)
   const [detailed, setDetailed] = useState(true)
@@ -546,6 +546,7 @@ export function Toolbar() {
       if (!confirm('新建画布将清空当前内容，是否继续？')) return
     }
     resetCanvas()
+    setCanvasSize(width, height)
     setShowNewCanvas(false)
     alert(`已创建 ${width}×${height} 画布`)
   }

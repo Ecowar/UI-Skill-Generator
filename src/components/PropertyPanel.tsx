@@ -5,6 +5,7 @@ import { Trash2, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, AlignLeft, Al
 import { ColorPicker } from './ui/ColorPicker'
 import { Slider } from './ui/Slider'
 import { ShadowSelector } from './ui/ShadowSelector'
+import { ProgressBar } from './ui/ProgressBar'
 
 function CollapsibleSection({ title, icon, defaultOpen = true, children }: { title: string; icon: React.ReactNode; defaultOpen?: boolean; children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
@@ -99,7 +100,7 @@ export function PropertyPanel() {
   const isFirst = currentIndex === 0
   const isLast = currentIndex === sortedComponents.length - 1
 
-  const isTextComponent = ['text', 'button', 'input', 'textarea'].includes(selectedComponent.type)
+  const isTextComponent = ['text', 'button', 'input', 'textarea', 'badge'].includes(selectedComponent.type)
   const canHaveShadow = ['button', 'card', 'image'].includes(selectedComponent.type)
 
   return (
@@ -149,7 +150,48 @@ export function PropertyPanel() {
             </div>
           )}
           
-          {!isTextComponent && selectedComponent.type !== 'image' && selectedComponent.type !== 'select' && (
+          {selectedComponent.type === 'progressbar' && (
+            <ProgressBar
+              label="进度值"
+              progress={selectedComponent.style.progress ?? 60}
+              onChange={(v) => handleStyleChange('progress', v)}
+            />
+          )}
+          
+          {selectedComponent.type === 'checkbox' && (
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">标签文字</label>
+              <input
+                type="text"
+                value={selectedComponent.content}
+                onChange={(e) => updateComponent(selectedComponent.id, { content: e.target.value })}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded mt-2">
+                <label className="text-xs text-gray-700">选中状态</label>
+                <input
+                  type="checkbox"
+                  checked={selectedComponent.style.checked ?? false}
+                  onChange={(e) => handleStyleChange('checked', e.target.checked)}
+                  className="w-4 h-4"
+                />
+              </div>
+            </div>
+          )}
+          
+          {selectedComponent.type === 'radiogroup' && (
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">选项列表（每行一个）</label>
+              <textarea
+                value={(selectedComponent.style.options ?? []).join('\n')}
+                onChange={(e) => handleStyleChange('options', e.target.value.split('\n'))}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows={4}
+              />
+            </div>
+          )}
+          
+          {!isTextComponent && selectedComponent.type !== 'image' && selectedComponent.type !== 'select' && selectedComponent.type !== 'progressbar' && selectedComponent.type !== 'divider' && selectedComponent.type !== 'checkbox' && selectedComponent.type !== 'radiogroup' && (
             <p className="text-xs text-gray-400 italic">此组件无可编辑内容</p>
           )}
         </CollapsibleSection>
@@ -319,6 +361,15 @@ export function PropertyPanel() {
               color={selectedComponent.style.backgroundColor}
               onChange={(c) => handleStyleChange('backgroundColor', c)}
             />
+            
+            {selectedComponent.type === 'progressbar' && (
+              <ColorPicker
+                label="已填充颜色"
+                color={selectedComponent.style.color}
+                onChange={(c) => handleStyleChange('color', c)}
+              />
+            )}
+            
             <Slider
               label="圆角"
               value={selectedComponent.style.borderRadius}
@@ -408,6 +459,15 @@ export function PropertyPanel() {
                       {fit === 'fill' ? '填充' : fit === 'contain' ? '包含' : fit === 'cover' ? '覆盖' : '原始'}
                     </button>
                   ))}
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded mt-2">
+                  <label className="text-xs text-gray-700">圆形裁剪（头像）</label>
+                  <input
+                    type="checkbox"
+                    checked={selectedComponent.style.circular ?? false}
+                    onChange={(e) => handleStyleChange('circular', e.target.checked)}
+                    className="w-4 h-4"
+                  />
                 </div>
               </div>
             )}

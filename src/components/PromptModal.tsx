@@ -92,29 +92,31 @@ export function PromptModal({ prompts, onClose }: PromptModalProps) {
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-          <p className="text-xs text-gray-500">
-            💡 提示：可直接复制到 Claude、GPT、Cursor、v0 等 AI 工具中使用
-          </p>
-          <div className="flex gap-2">
-            <a
-              href="https://v0.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 text-xs bg-black text-white rounded hover:bg-gray-800 flex items-center gap-1"
-            >
-              <span>⚡</span>
-              在 v0 中测试
-            </a>
-            <a
-              href="https://cursor.sh"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-1"
-            >
-              <span>✨</span>
-              在 Cursor 中测试
-            </a>
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500">
+              💡 提示：可直接复制到 Claude、GPT、Cursor、v0 等 AI 工具中使用
+            </p>
+            <div className="flex gap-2">
+              <a
+                href="https://v0.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs bg-black text-white rounded hover:bg-gray-800 flex items-center gap-1"
+              >
+                <span>⚡</span>
+                在 v0 中测试
+              </a>
+              <a
+                href="https://cursor.sh"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-1"
+              >
+                <span>✨</span>
+                在 Cursor 中测试
+              </a>
+            </div>
           </div>
         </div>
       </div>

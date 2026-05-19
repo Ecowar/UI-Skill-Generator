@@ -10,12 +10,21 @@ const VIEWPORT_SIZES = {
 
 const SNAP_THRESHOLD = 5
 
+const getViewportSize = (viewportMode: string, canvasWidth: number, canvasHeight: number) => {
+  if (viewportMode === 'desktop') {
+    return { width: canvasWidth, height: canvasHeight }
+  }
+  return VIEWPORT_SIZES[viewportMode as keyof typeof VIEWPORT_SIZES] || VIEWPORT_SIZES.desktop
+}
+
 export function Canvas() {
   const canvasRef = useRef<HTMLDivElement>(null)
-  const { components, selectedId, addComponent, setSelectedId, updatePosition, deleteComponent, settings, undo, redo } = useCanvasStore()
+  const { components, selectedId, addComponent, setSelectedId, updatePosition, updateComponent, deleteComponent, settings, undo, redo } = useCanvasStore()
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [snapLines, setSnapLines] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
+  const [resizingId, setResizingId] = useState<string | null>(null)
+  const [resizeStart, setResizeStart] = useState({ mouseX: 0, mouseY: 0, width: 0, height: 0 })
   
   const showGuide = useMemo(() => components.length === 0, [components.length])
 
@@ -94,7 +103,35 @@ export function Canvas() {
     setDragOffset({ x: offsetX, y: offsetY })
   }
 
+  const handleResizeMouseDown = (e: React.MouseEvent, component: CanvasComponent) => {
+    if (e.button !== 0) return
+    e.stopPropagation()
+    e.preventDefault()
+    setResizingId(component.id)
+    setResizeStart({
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      width: component.style.width,
+      height: component.style.height,
+    })
+  }
+
   const handleMouseMove = (e: React.MouseEvent) => {
+    if (resizingId) {
+      const resizingComp = components.find(c => c.id === resizingId)
+      if (!resizingComp) return
+
+      const dx = e.clientX - resizeStart.mouseX
+      const dy = e.clientY - resizeStart.mouseY
+      const newWidth = Math.max(20, resizeStart.width + dx)
+      const newHeight = Math.max(20, resizeStart.height + dy)
+
+      updateComponent(resizingId, {
+        style: { ...resizingComp.style, width: newWidth, height: newHeight },
+      })
+      return
+    }
+
     if (!draggingId || !canvasRef.current) return
 
     const draggingComp = components.find(c => c.id === draggingId)
@@ -103,7 +140,7 @@ export function Canvas() {
     let newX = e.clientX - dragOffset.x
     let newY = e.clientY - dragOffset.y
 
-    const viewportSize = VIEWPORT_SIZES[settings.viewportMode]
+    const viewportSize = getViewportSize(settings.viewportMode, settings.canvasWidth, settings.canvasHeight)
     newX = Math.max(0, Math.min(newX, viewportSize.width - draggingComp.style.width))
     newY = Math.max(0, Math.min(newY, viewportSize.height - draggingComp.style.height))
 
@@ -120,6 +157,7 @@ export function Canvas() {
 
   const handleMouseUp = () => {
     setDraggingId(null)
+    setResizingId(null)
     setSnapLines({ x: [], y: [] })
   }
 
@@ -194,9 +232,93 @@ export function Canvas() {
         )
       case 'image':
         return component.imageUrl ? (
-          <img src={component.imageUrl} alt="组件图片" className="w-full h-full" style={{ objectFit: component.style.objectFit }} />
+          <img
+            src={component.imageUrl}
+            alt="组件图片"
+            className="w-full h-full"
+            style={{
+              objectFit: component.style.objectFit,
+              borderRadius: component.style.circular ? '50%' : undefined,
+            }}
+          />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl text-gray-400">📷</div>
+          <div
+            className="w-full h-full flex items-center justify-center text-4xl text-gray-400"
+            style={{ borderRadius: component.style.circular ? '50%' : undefined }}
+          >
+            {component.style.circular ? '👤' : '📷'}
+          </div>
+        )
+      case 'progressbar':
+        return (
+          <div className="w-full h-full flex items-center">
+            <div
+              className="h-full rounded transition-all duration-300"
+              style={{
+                width: `${Math.min(Math.max(component.style.progress ?? 60, 0), 100)}%`,
+                backgroundColor: component.style.color,
+                borderRadius: component.style.circular ? '50%' : component.style.borderRadius,
+              }}
+            />
+          </div>
+        )
+      case 'divider':
+        return (
+          <div className="w-full h-full flex items-center">
+            <div className="w-full" style={{ height: component.style.height, backgroundColor: component.style.backgroundColor }} />
+          </div>
+        )
+      case 'badge':
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <span style={{ fontSize: component.style.fontSize, fontWeight: component.style.fontWeight, color: component.style.color }}>
+              {component.content}
+            </span>
+          </div>
+        )
+      case 'checkbox':
+        return (
+          <div className="w-full h-full flex items-center gap-2">
+            <div
+              className="flex items-center justify-center border-2 rounded"
+              style={{
+                width: 18,
+                height: 18,
+                borderColor: component.style.checked ? '#3b82f6' : '#9ca3af',
+                backgroundColor: component.style.checked ? '#3b82f6' : 'transparent',
+              }}
+            >
+              {component.style.checked && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
+            <span style={{ fontSize: component.style.fontSize, color: component.style.color }}>{component.content}</span>
+          </div>
+        )
+      case 'radiogroup':
+        return (
+          <div className="w-full h-full flex flex-col justify-center gap-1">
+            {(component.style.options ?? []).filter(opt => opt.trim()).map((opt, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div
+                  className="rounded-full border-2"
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderColor: i === 0 ? '#3b82f6' : '#9ca3af',
+                    position: 'relative',
+                  }}
+                >
+                  {i === 0 && (
+                    <div className="absolute inset-1 rounded-full bg-blue-500" />
+                  )}
+                </div>
+                <span style={{ fontSize: component.style.fontSize, color: component.style.color }}>{opt}</span>
+              </div>
+            ))}
+          </div>
         )
       default:
         return <span>{component.content}</span>
@@ -204,7 +326,7 @@ export function Canvas() {
   }
 
   const sortedComponents = [...components].sort((a, b) => a.zIndex - b.zIndex)
-  const viewportSize = VIEWPORT_SIZES[settings.viewportMode]
+  const viewportSize = getViewportSize(settings.viewportMode, settings.canvasWidth, settings.canvasHeight)
   const scale = settings.viewportMode === 'mobile' ? 1 : settings.viewportMode === 'tablet' ? 0.95 : 1
 
   return (
@@ -247,7 +369,7 @@ export function Canvas() {
               fontWeight: component.style.fontWeight,
               color: component.style.color,
               backgroundColor: component.style.backgroundColor,
-              borderRadius: component.style.borderRadius,
+              borderRadius: component.style.circular ? '50%' : component.style.borderRadius,
               padding: component.style.padding,
               border: selectedId === component.id ? '2px solid #3b82f6' : getBorderStyle(component),
               cursor: draggingId === component.id ? 'grabbing' : 'grab',
@@ -261,6 +383,16 @@ export function Canvas() {
             className="overflow-hidden flex items-center justify-center"
           >
             {renderComponentContent(component)}
+            {selectedId === component.id && (
+              <div
+                onMouseDown={(e) => handleResizeMouseDown(e, component)}
+                className="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-10"
+                style={{
+                  background: 'linear-gradient(135deg, transparent 50%, #3b82f6 50%)',
+                  borderRadius: '0 0 0 0',
+                }}
+              />
+            )}
           </div>
         ))}
 

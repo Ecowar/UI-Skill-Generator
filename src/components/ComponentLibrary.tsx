@@ -8,7 +8,12 @@ import {
   Star,
   ToggleLeft,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Gauge,
+  SeparatorHorizontal,
+  Tag,
+  CheckSquare,
+  CircleDot
 } from 'lucide-react'
 
 type ComponentType = 
@@ -22,6 +27,11 @@ type ComponentType =
   | 'switch'
   | 'textarea'
   | 'select'
+  | 'progressbar'
+  | 'divider'
+  | 'badge'
+  | 'checkbox'
+  | 'radiogroup'
 
 interface ComponentItem {
   type: ComponentType
@@ -40,6 +50,11 @@ const componentList: ComponentItem[] = [
   { type: 'switch', label: '开关', icon: <ToggleLeft size={20} /> },
   { type: 'textarea', label: '文本域', icon: <FileText size={20} /> },
   { type: 'select', label: '下拉框', icon: <ChevronDown size={20} /> },
+  { type: 'progressbar', label: '进度条', icon: <Gauge size={20} /> },
+  { type: 'divider', label: '分割线', icon: <SeparatorHorizontal size={20} /> },
+  { type: 'badge', label: '标签', icon: <Tag size={20} /> },
+  { type: 'checkbox', label: '复选框', icon: <CheckSquare size={20} /> },
+  { type: 'radiogroup', label: '单选框组', icon: <CircleDot size={20} /> },
 ]
 
 interface ComponentLibraryProps {
